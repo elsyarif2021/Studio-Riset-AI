@@ -1,0 +1,6 @@
+{
+  "name": "RisetAI Academic Studio",
+  "description": "Dashboard proyek penelitian akademik berbahasa Indonesia dengan editor BAB I–V, pengelola referensi terverifikasi, generator instrumen penelitian, asistensi Ollama Cloud, dan ekspor Word DOCX.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,271 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net: Default-Deny Catch-All
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Primitive Helpers ---
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(ownerId) {
+      return isSignedIn() && request.auth.uid == ownerId;
+    }
+
+    function isProjectOwner(projectId) {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/projects/$(projectId))
+        && get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId == request.auth.uid;
+    }
+
+    // --- Validation Blueprints ---
+    function isValidUserProfile(data, userId) {
+      return data.keys().hasAll([
+          'uid', 'displayName', 'email', 'photoURL', 'institution', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'uid', 'displayName', 'email', 'photoURL', 'institution', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.uid)
+        && data.uid == userId
+        && data.uid == request.auth.uid
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 120
+        && data.email is string && data.email.size() >= 3 && data.email.size() <= 200
+        && data.photoURL is string && data.photoURL.size() <= 500
+        && data.institution is string && data.institution.size() <= 200
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidChaptersMap(chapters) {
+      return chapters is map
+        && chapters.keys().hasAll(['bab1', 'bab2', 'bab3', 'bab4', 'bab5'])
+        && chapters.keys().hasOnly(['bab1', 'bab2', 'bab3', 'bab4', 'bab5'])
+        && chapters.bab1 is string && chapters.bab1.size() <= 120000
+        && chapters.bab2 is string && chapters.bab2.size() <= 120000
+        && chapters.bab3 is string && chapters.bab3.size() <= 120000
+        && chapters.bab4 is string && chapters.bab4.size() <= 120000
+        && chapters.bab5 is string && chapters.bab5.size() <= 120000;
+    }
+
+    function isValidResearchProject(data) {
+      return data.keys().hasAll([
+          'ownerId', 'title', 'topic', 'studyProgram', 'authorName', 'institution',
+          'year', 'methodology', 'stage', 'researchQuestions', 'researchObjectives',
+          'hasResearchData', 'researchDataSummary', 'chapters', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerId', 'title', 'topic', 'studyProgram', 'authorName', 'institution',
+          'year', 'methodology', 'stage', 'researchQuestions', 'researchObjectives',
+          'hasResearchData', 'researchDataSummary', 'chapters', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.ownerId)
+        && data.ownerId == request.auth.uid
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 300
+        && data.topic is string && data.topic.size() <= 600
+        && data.studyProgram is string && data.studyProgram.size() <= 150
+        && data.authorName is string && data.authorName.size() <= 150
+        && data.institution is string && data.institution.size() <= 200
+        && data.year is string && data.year.size() <= 10
+        && data.methodology is string && data.methodology.size() <= 40
+        && data.methodology in ['Kualitatif', 'Kuantitatif', 'Mix Method', 'R&D', 'PTK', 'Studi Literatur']
+        && data.stage is string && data.stage.size() <= 40
+        && data.stage in ['Perencanaan', 'Penyusunan', 'Revisi', 'Siap Ekspor']
+        && data.researchQuestions is string && data.researchQuestions.size() <= 5000
+        && data.researchObjectives is string && data.researchObjectives.size() <= 5000
+        && data.hasResearchData is bool
+        && data.researchDataSummary is string && data.researchDataSummary.size() <= 15000
+        && isValidChaptersMap(data.chapters)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidProjectReference(data, projectId) {
+      return data.keys().hasAll([
+          'ownerId', 'projectId', 'type', 'authors', 'year', 'title',
+          'source', 'volumeIssuePages', 'doiOrUrl', 'notes', 'verified', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerId', 'projectId', 'type', 'authors', 'year', 'title',
+          'source', 'volumeIssuePages', 'doiOrUrl', 'notes', 'verified', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.ownerId)
+        && data.ownerId == request.auth.uid
+        && isValidId(data.projectId)
+        && data.projectId == projectId
+        && data.type is string && data.type.size() <= 40
+        && data.type in ['Jurnal', 'Buku', 'Prosiding', 'Skripsi/Tesis', 'Dokumen/Web']
+        && data.authors is string && data.authors.size() >= 1 && data.authors.size() <= 300
+        && data.year is string && data.year.size() >= 1 && data.year.size() <= 20
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 400
+        && data.source is string && data.source.size() <= 300
+        && data.volumeIssuePages is string && data.volumeIssuePages.size() <= 120
+        && data.doiOrUrl is string && data.doiOrUrl.size() <= 400
+        && data.notes is string && data.notes.size() <= 2000
+        && data.verified is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidProjectInstrument(data, projectId) {
+      return data.keys().hasAll([
+          'ownerId', 'projectId', 'instrumentType', 'code', 'variable',
+          'indicator', 'question', 'scaleOrNotes', 'orderIndex', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerId', 'projectId', 'instrumentType', 'code', 'variable',
+          'indicator', 'question', 'scaleOrNotes', 'orderIndex', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.ownerId)
+        && data.ownerId == request.auth.uid
+        && isValidId(data.projectId)
+        && data.projectId == projectId
+        && data.instrumentType is string && data.instrumentType.size() <= 60
+        && data.instrumentType in ['Kuesioner Skala Likert', 'Pedoman Wawancara', 'Lembar Observasi', 'Tes/Rubrik']
+        && data.code is string && data.code.size() >= 1 && data.code.size() <= 40
+        && data.variable is string && data.variable.size() >= 1 && data.variable.size() <= 200
+        && data.indicator is string && data.indicator.size() >= 1 && data.indicator.size() <= 300
+        && data.question is string && data.question.size() >= 1 && data.question.size() <= 1500
+        && data.scaleOrNotes is string && data.scaleOrNotes.size() <= 300
+        && data.orderIndex is number && data.orderIndex >= 0 && data.orderIndex <= 10000
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // --- Collection Rules ---
+    match /users/{userId} {
+      allow get: if isValidId(userId) && isOwner(userId);
+      allow list: if false;
+      allow create: if isValidId(userId)
+        && isVerifiedUser()
+        && isOwner(userId)
+        && isValidUserProfile(incoming(), userId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(userId)
+        && isVerifiedUser()
+        && isOwner(userId)
+        && isValidUserProfile(incoming(), userId)
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'displayName', 'email', 'photoURL', 'institution', 'updatedAt'
+        ]);
+      allow delete: if false;
+    }
+
+    match /projects/{projectId} {
+      allow get: if isValidId(projectId) && isOwner(existing().ownerId);
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isValidId(projectId)
+        && isVerifiedUser()
+        && isValidResearchProject(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(projectId)
+        && isVerifiedUser()
+        && isOwner(existing().ownerId)
+        && isValidResearchProject(incoming())
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          // Action: Update Project Metadata & Research Questions
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'title', 'topic', 'studyProgram', 'authorName', 'institution',
+            'year', 'methodology', 'stage', 'researchQuestions', 'researchObjectives', 'updatedAt'
+          ]) ||
+          // Action: Update Chapters (BAB I-V) & Research Data Marker
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'chapters', 'hasResearchData', 'researchDataSummary', 'stage', 'updatedAt'
+          ]) ||
+          // Action: Full Project Save
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'title', 'topic', 'studyProgram', 'authorName', 'institution',
+            'year', 'methodology', 'stage', 'researchQuestions', 'researchObjectives',
+            'hasResearchData', 'researchDataSummary', 'chapters', 'updatedAt'
+          ])
+        );
+      allow delete: if isValidId(projectId) && isVerifiedUser() && isOwner(existing().ownerId);
+
+      match /references/{referenceId} {
+        allow get: if isValidId(projectId) && isValidId(referenceId) && isOwner(existing().ownerId) && isProjectOwner(projectId);
+        allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid && resource.data.projectId == projectId;
+        allow create: if isValidId(projectId)
+          && isValidId(referenceId)
+          && isVerifiedUser()
+          && isValidProjectReference(incoming(), projectId)
+          && isProjectOwner(projectId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time;
+        allow update: if isValidId(projectId)
+          && isValidId(referenceId)
+          && isVerifiedUser()
+          && isOwner(existing().ownerId)
+          && isValidProjectReference(incoming(), projectId)
+          && isProjectOwner(projectId)
+          && incoming().ownerId == existing().ownerId
+          && incoming().projectId == existing().projectId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && (
+            // Action: Edit Reference Details
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'type', 'authors', 'year', 'title', 'source',
+              'volumeIssuePages', 'doiOrUrl', 'notes', 'verified', 'updatedAt'
+            ]) ||
+            // Action: Toggle Verified Status
+            incoming().diff(existing()).affectedKeys().hasOnly(['verified', 'updatedAt'])
+          );
+        allow delete: if isValidId(projectId) && isValidId(referenceId) && isVerifiedUser() && isOwner(existing().ownerId) && isProjectOwner(projectId);
+      }
+
+      match /instruments/{instrumentId} {
+        allow get: if isValidId(projectId) && isValidId(instrumentId) && isOwner(existing().ownerId) && isProjectOwner(projectId);
+        allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid && resource.data.projectId == projectId;
+        allow create: if isValidId(projectId)
+          && isValidId(instrumentId)
+          && isVerifiedUser()
+          && isValidProjectInstrument(incoming(), projectId)
+          && isProjectOwner(projectId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time;
+        allow update: if isValidId(projectId)
+          && isValidId(instrumentId)
+          && isVerifiedUser()
+          && isOwner(existing().ownerId)
+          && isValidProjectInstrument(incoming(), projectId)
+          && isProjectOwner(projectId)
+          && incoming().ownerId == existing().ownerId
+          && incoming().projectId == existing().projectId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'instrumentType', 'code', 'variable', 'indicator',
+            'question', 'scaleOrNotes', 'orderIndex', 'updatedAt'
+          ]);
+        allow delete: if isValidId(projectId) && isValidId(instrumentId) && isVerifiedUser() && isOwner(existing().ownerId) && isProjectOwner(projectId);
+      }
+    }
+  }
+}

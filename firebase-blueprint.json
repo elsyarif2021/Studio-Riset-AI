@@ -1,0 +1,363 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Profil pengguna RisetAI Academic Studio untuk sinkronisasi lintas perangkat.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "UID pengguna dari Firebase Auth.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Nama tampilan peneliti.",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Alamat email akun Google peneliti.",
+          "minLength": 3,
+          "maxLength": 200
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "URL foto profil Google.",
+          "maxLength": 500
+        },
+        "institution": {
+          "type": "string",
+          "description": "Nama perguruan tinggi atau lembaga afiliasi.",
+          "maxLength": 200
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Waktu pembuatan profil (server timestamp)."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Waktu pembaruan terakhir (server timestamp)."
+        }
+      },
+      "required": ["uid", "displayName", "email", "photoURL", "institution", "createdAt", "updatedAt"]
+    },
+    "ResearchProject": {
+      "title": "ResearchProject",
+      "description": "Proyek penelitian akademik yang berisi metadata dan naskah BAB I sampai BAB V.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "UID pemilik proyek yang memiliki akses eksklusif.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "title": {
+          "type": "string",
+          "description": "Judul penelitian akademik.",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "topic": {
+          "type": "string",
+          "description": "Topik atau fenomena utama penelitian.",
+          "maxLength": 600
+        },
+        "studyProgram": {
+          "type": "string",
+          "description": "Program studi atau bidang keilmuan.",
+          "maxLength": 150
+        },
+        "authorName": {
+          "type": "string",
+          "description": "Nama peneliti atau penulis naskah.",
+          "maxLength": 150
+        },
+        "institution": {
+          "type": "string",
+          "description": "Institusi atau universitas.",
+          "maxLength": 200
+        },
+        "year": {
+          "type": "string",
+          "description": "Tahun penulisan penelitian.",
+          "maxLength": 10
+        },
+        "methodology": {
+          "type": "string",
+          "description": "Pendekatan metodologi penelitian.",
+          "enum": ["Kualitatif", "Kuantitatif", "Mix Method", "R&D", "PTK", "Studi Literatur"],
+          "maxLength": 40
+        },
+        "stage": {
+          "type": "string",
+          "description": "Tahapan progres penyusunan naskah.",
+          "enum": ["Perencanaan", "Penyusunan", "Revisi", "Siap Ekspor"],
+          "maxLength": 40
+        },
+        "researchQuestions": {
+          "type": "string",
+          "description": "Rumusan masalah atau pertanyaan penelitian.",
+          "maxLength": 5000
+        },
+        "researchObjectives": {
+          "type": "string",
+          "description": "Tujuan penelitian.",
+          "maxLength": 5000
+        },
+        "hasResearchData": {
+          "type": "boolean",
+          "description": "Menandai apakah data penelitian lapangan untuk BAB IV sudah tersedia."
+        },
+        "researchDataSummary": {
+          "type": "string",
+          "description": "Ringkasan data atau temuan lapangan untuk BAB IV.",
+          "maxLength": 15000
+        },
+        "chapters": {
+          "type": "object",
+          "description": "Peta konten naskah BAB I hingga BAB V (bab1..bab5).",
+          "properties": {
+            "bab1": { "type": "string", "maxLength": 120000 },
+            "bab2": { "type": "string", "maxLength": 120000 },
+            "bab3": { "type": "string", "maxLength": 120000 },
+            "bab4": { "type": "string", "maxLength": 120000 },
+            "bab5": { "type": "string", "maxLength": 120000 }
+          },
+          "required": ["bab1", "bab2", "bab3", "bab4", "bab5"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp pembuatan proyek."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp pembaruan terakhir."
+        }
+      },
+      "required": [
+        "ownerId",
+        "title",
+        "topic",
+        "studyProgram",
+        "authorName",
+        "institution",
+        "year",
+        "methodology",
+        "stage",
+        "researchQuestions",
+        "researchObjectives",
+        "hasResearchData",
+        "researchDataSummary",
+        "chapters",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ProjectReference": {
+      "title": "ProjectReference",
+      "description": "Referensi ilmiah terverifikasi atau masukan pengguna untuk proyek penelitian.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "UID pemilik proyek.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "projectId": {
+          "type": "string",
+          "description": "ID proyek induk.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "type": {
+          "type": "string",
+          "description": "Jenis sumber pustaka.",
+          "enum": ["Jurnal", "Buku", "Prosiding", "Skripsi/Tesis", "Dokumen/Web"],
+          "maxLength": 40
+        },
+        "authors": {
+          "type": "string",
+          "description": "Nama penulis atau lembaga.",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "year": {
+          "type": "string",
+          "description": "Tahun terbit.",
+          "minLength": 1,
+          "maxLength": 20
+        },
+        "title": {
+          "type": "string",
+          "description": "Judul artikel, buku, atau dokumen.",
+          "minLength": 1,
+          "maxLength": 400
+        },
+        "source": {
+          "type": "string",
+          "description": "Nama jurnal, penerbit, atau konferensi.",
+          "maxLength": 300
+        },
+        "volumeIssuePages": {
+          "type": "string",
+          "description": "Volume, edisi, dan halaman.",
+          "maxLength": 120
+        },
+        "doiOrUrl": {
+          "type": "string",
+          "description": "DOI atau tautan sumber.",
+          "maxLength": 400
+        },
+        "notes": {
+          "type": "string",
+          "description": "Ringkasan kutipan atau catatan relevansi.",
+          "maxLength": 2000
+        },
+        "verified": {
+          "type": "boolean",
+          "description": "Status verifikasi referensi oleh peneliti."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp penambahan referensi."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp pembaruan referensi."
+        }
+      },
+      "required": [
+        "ownerId",
+        "projectId",
+        "type",
+        "authors",
+        "year",
+        "title",
+        "source",
+        "volumeIssuePages",
+        "doiOrUrl",
+        "notes",
+        "verified",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ProjectInstrument": {
+      "title": "ProjectInstrument",
+      "description": "Butir instrumen penelitian untuk tabel kisi-kisi, kuesioner, wawancara, atau observasi.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "UID pemilik proyek.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "projectId": {
+          "type": "string",
+          "description": "ID proyek induk.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "instrumentType": {
+          "type": "string",
+          "description": "Jenis instrumen penelitian.",
+          "enum": ["Kuesioner Skala Likert", "Pedoman Wawancara", "Lembar Observasi", "Tes/Rubrik"],
+          "maxLength": 60
+        },
+        "code": {
+          "type": "string",
+          "description": "Kode butir instrumen (mis. Q1, W1).",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "variable": {
+          "type": "string",
+          "description": "Variabel atau aspek yang diukur.",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "indicator": {
+          "type": "string",
+          "description": "Indikator capaian atau fokus pengamatan.",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "question": {
+          "type": "string",
+          "description": "Butir pernyataan atau pertanyaan instrumen.",
+          "minLength": 1,
+          "maxLength": 1500
+        },
+        "scaleOrNotes": {
+          "type": "string",
+          "description": "Skala penilaian atau catatan pengumpulan data.",
+          "maxLength": 300
+        },
+        "orderIndex": {
+          "type": "number",
+          "description": "Urutan tampil butir instrumen."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp penambahan instrumen."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp pembaruan instrumen."
+        }
+      },
+      "required": [
+        "ownerId",
+        "projectId",
+        "instrumentType",
+        "code",
+        "variable",
+        "indicator",
+        "question",
+        "scaleOrNotes",
+        "orderIndex",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Profil privat pengguna RisetAI Academic Studio."
+    },
+    "/projects/{projectId}": {
+      "schema": { "$ref": "#/entities/ResearchProject" },
+      "description": "Dokumen proyek penelitian yang hanya dapat diakses pemiliknya."
+    },
+    "/projects/{projectId}/references/{referenceId}": {
+      "schema": { "$ref": "#/entities/ProjectReference" },
+      "description": "Subkoleksi daftar referensi untuk masing-masing proyek."
+    },
+    "/projects/{projectId}/instruments/{instrumentId}": {
+      "schema": { "$ref": "#/entities/ProjectInstrument" },
+      "description": "Subkoleksi butir instrumen penelitian untuk masing-masing proyek."
+    }
+  }
+}
